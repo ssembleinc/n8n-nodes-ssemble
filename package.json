@@ -1,0 +1,49 @@
+{
+  "name": "n8n-nodes-ssemble",
+  "version": "0.1.0",
+  "description": "n8n community node for Ssemble AI Clipping — create viral short-form videos from YouTube",
+  "keywords": [
+    "n8n-community-node-package"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/ssembleinc/n8n-nodes-ssemble",
+  "author": {
+    "name": "Ssemble",
+    "email": "support@ssemble.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ssembleinc/n8n-nodes-ssemble.git"
+  },
+  "engines": {
+    "node": ">=20.15"
+  },
+  "main": "index.js",
+  "scripts": {
+    "format": "prettier nodes credentials --write",
+    "lint": "eslint nodes credentials package.json",
+    "lintfix": "eslint nodes credentials package.json --fix"
+  },
+  "files": [
+    "nodes",
+    "credentials"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "credentials/SsembleApi.credentials.js"
+    ],
+    "nodes": [
+      "nodes/Ssemble/Ssemble.node.js"
+    ]
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-plugin-n8n-nodes-base": "^1.16.3",
+    "jsonc-eslint-parser": "^2.4.0",
+    "prettier": "^3.5.3"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

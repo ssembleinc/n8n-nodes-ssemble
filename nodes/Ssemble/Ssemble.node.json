@@ -1,0 +1,13 @@
+{
+	"node": "n8n-nodes-ssemble.ssemble",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Multimedia"],
+	"resources": {
+		"primaryDocumentation": [
+			{
+				"url": "https://github.com/ssembleinc/n8n-nodes-ssemble"
+			}
+		]
+	}
+}
