@@ -285,6 +285,13 @@ const shortFields = [
 				default: '',
 				description: 'Caption template ID (24-char hex). Use the "Asset > List" operation to browse templates.',
 			},
+			{
+				displayName: 'Webhook URL',
+				name: 'webhookUrl',
+				type: 'string',
+				default: '',
+				description: 'URL to receive a POST request when processing completes or fails. Use instead of polling for status.',
+			},
 		],
 	},
 	// ── Get Results: Request ID ──

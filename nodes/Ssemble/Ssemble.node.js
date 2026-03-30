@@ -71,6 +71,7 @@ async function createShort(context, itemIndex, credentials) {
 		'music',
 		'musicName',
 		'musicVolume',
+		'webhookUrl',
 	];
 
 	for (const key of optionKeys) {
