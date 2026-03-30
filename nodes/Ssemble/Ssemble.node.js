@@ -1,7 +1,6 @@
-let NodeConnectionType;
 let NodeOperationError;
 try {
-	({ NodeConnectionType, NodeOperationError } = require('n8n-workflow'));
+	({ NodeOperationError } = require('n8n-workflow'));
 } catch {
 	// n8n-workflow is provided at runtime by n8n
 }
@@ -17,6 +16,97 @@ const ASSET_TYPE_TO_PATH = {
 	gameVideos: '/game-videos',
 	memeHooks: '/meme-hooks',
 };
+
+async function apiRequest(context, method, path, credentials, body, qs) {
+	const options = {
+		method,
+		url: `${BASE_URL}${path}`,
+		headers: {
+			'X-API-Key': credentials.apiKey,
+			'Content-Type': 'application/json',
+		},
+		json: true,
+	};
+
+	if (body) {
+		options.body = body;
+	}
+
+	if (qs && Object.keys(qs).length > 0) {
+		options.qs = qs;
+	}
+
+	return context.helpers.httpRequest(options);
+}
+
+async function createShort(context, itemIndex, credentials) {
+	const videoSource = context.getNodeParameter('videoSource', itemIndex);
+	const body = {
+		start: context.getNodeParameter('start', itemIndex),
+		end: context.getNodeParameter('end', itemIndex),
+	};
+
+	if (videoSource === 'url') {
+		body.url = context.getNodeParameter('url', itemIndex);
+	} else {
+		body.fileUrl = context.getNodeParameter('fileUrl', itemIndex);
+	}
+
+	const additionalOptions = context.getNodeParameter('additionalOptions', itemIndex, {});
+
+	const optionKeys = [
+		'preferredLength',
+		'language',
+		'captionLanguage',
+		'templateId',
+		'layout',
+		'noClipping',
+		'hookTitle',
+		'memeHook',
+		'memeHookName',
+		'gameVideo',
+		'gameVideoName',
+		'ctaEnabled',
+		'ctaText',
+		'music',
+		'musicName',
+		'musicVolume',
+	];
+
+	for (const key of optionKeys) {
+		if (additionalOptions[key] !== undefined && additionalOptions[key] !== '') {
+			body[key] = additionalOptions[key];
+		}
+	}
+
+	return apiRequest(context, 'POST', '/shorts/create', credentials, body);
+}
+
+async function listRequests(context, itemIndex, credentials) {
+	const limit = context.getNodeParameter('limit', itemIndex, 20);
+	const filters = context.getNodeParameter('filters', itemIndex, {});
+
+	const qs = { limit };
+	if (filters.status) qs.status = filters.status;
+	if (filters.sortBy) qs.sortBy = filters.sortBy;
+	if (filters.sortOrder) qs.sortOrder = filters.sortOrder;
+	if (filters.page) qs.page = filters.page;
+
+	return apiRequest(context, 'GET', '/shorts', credentials, undefined, qs);
+}
+
+async function listAssets(context, itemIndex, credentials) {
+	const assetType = context.getNodeParameter('assetType', itemIndex);
+	const path = ASSET_TYPE_TO_PATH[assetType];
+	const qs = {};
+
+	if (assetType !== 'templates') {
+		qs.limit = context.getNodeParameter('limit', itemIndex, 20);
+		qs.page = context.getNodeParameter('page', itemIndex, 1);
+	}
+
+	return apiRequest(context, 'GET', path, credentials, undefined, qs);
+}
 
 class Ssemble {
 	constructor() {
@@ -87,31 +177,33 @@ class Ssemble {
 
 				if (resource === 'short') {
 					if (operation === 'create') {
-						response = await this.createShort(i, credentials);
+						response = await createShort(this, i, credentials);
 					} else if (operation === 'getResults') {
 						const requestId = this.getNodeParameter('requestId', i);
-						response = await this.apiRequest('GET', `/shorts/${requestId}`, credentials);
+						response = await apiRequest(this, 'GET', `/shorts/${requestId}`, credentials);
 					}
 				} else if (resource === 'request') {
 					if (operation === 'getStatus') {
 						const requestId = this.getNodeParameter('requestId', i);
-						response = await this.apiRequest(
+						response = await apiRequest(
+							this,
 							'GET',
 							`/shorts/${requestId}/status`,
 							credentials,
 						);
 					} else if (operation === 'getAll') {
-						response = await this.listRequests(i, credentials);
+						response = await listRequests(this, i, credentials);
 					} else if (operation === 'delete') {
 						const requestId = this.getNodeParameter('requestId', i);
-						response = await this.apiRequest(
+						response = await apiRequest(
+							this,
 							'DELETE',
 							`/shorts/${requestId}`,
 							credentials,
 						);
 					}
 				} else if (resource === 'asset') {
-					response = await this.listAssets(i, credentials);
+					response = await listAssets(this, i, credentials);
 				}
 
 				if (Array.isArray(response)) {
@@ -129,97 +221,6 @@ class Ssemble {
 		}
 
 		return [returnData];
-	}
-
-	async createShort(itemIndex, credentials) {
-		const videoSource = this.getNodeParameter('videoSource', itemIndex);
-		const body = {
-			start: this.getNodeParameter('start', itemIndex),
-			end: this.getNodeParameter('end', itemIndex),
-		};
-
-		if (videoSource === 'url') {
-			body.url = this.getNodeParameter('url', itemIndex);
-		} else {
-			body.fileUrl = this.getNodeParameter('fileUrl', itemIndex);
-		}
-
-		const additionalOptions = this.getNodeParameter('additionalOptions', itemIndex, {});
-
-		const optionKeys = [
-			'preferredLength',
-			'language',
-			'captionLanguage',
-			'templateId',
-			'layout',
-			'noClipping',
-			'hookTitle',
-			'memeHook',
-			'memeHookName',
-			'gameVideo',
-			'gameVideoName',
-			'ctaEnabled',
-			'ctaText',
-			'music',
-			'musicName',
-			'musicVolume',
-		];
-
-		for (const key of optionKeys) {
-			if (additionalOptions[key] !== undefined && additionalOptions[key] !== '') {
-				body[key] = additionalOptions[key];
-			}
-		}
-
-		return this.apiRequest('POST', '/shorts/create', credentials, body);
-	}
-
-	async listRequests(itemIndex, credentials) {
-		const limit = this.getNodeParameter('limit', itemIndex, 20);
-		const filters = this.getNodeParameter('filters', itemIndex, {});
-
-		const qs = { limit };
-		if (filters.status) qs.status = filters.status;
-		if (filters.sortBy) qs.sortBy = filters.sortBy;
-		if (filters.sortOrder) qs.sortOrder = filters.sortOrder;
-		if (filters.page) qs.page = filters.page;
-
-		return this.apiRequest('GET', '/shorts', credentials, undefined, qs);
-	}
-
-	async listAssets(itemIndex, credentials) {
-		const assetType = this.getNodeParameter('assetType', itemIndex);
-		const path = ASSET_TYPE_TO_PATH[assetType];
-		const qs = {};
-
-		if (assetType !== 'templates') {
-			qs.limit = this.getNodeParameter('limit', itemIndex, 20);
-			qs.page = this.getNodeParameter('page', itemIndex, 1);
-		}
-
-		return this.apiRequest('GET', path, credentials, undefined, qs);
-	}
-
-	async apiRequest(method, path, credentials, body, qs) {
-		const options = {
-			method,
-			url: `${BASE_URL}${path}`,
-			headers: {
-				'X-API-Key': credentials.apiKey,
-				'Content-Type': 'application/json',
-			},
-			json: true,
-		};
-
-		if (body) {
-			options.body = body;
-		}
-
-		if (qs && Object.keys(qs).length > 0) {
-			options.qs = qs;
-		}
-
-		return this.helpers.httpRequest(options);
 	}
 }
 
