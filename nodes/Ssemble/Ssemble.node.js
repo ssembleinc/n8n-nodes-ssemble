@@ -1,4 +1,10 @@
-const { NodeConnectionType, NodeOperationError } = require('n8n-workflow');
+let NodeConnectionType;
+let NodeOperationError;
+try {
+	({ NodeConnectionType, NodeOperationError } = require('n8n-workflow'));
+} catch {
+	// n8n-workflow is provided at runtime by n8n
+}
 const { shortOperations, shortFields } = require('./ShortDescription');
 const { requestOperations, requestFields } = require('./RequestDescription');
 const { assetOperations, assetFields } = require('./AssetDescription');
@@ -27,8 +33,8 @@ class Ssemble {
 				name: 'Ssemble',
 			},
 			usableAsTool: true,
-			inputs: [NodeConnectionType.Main],
-			outputs: [NodeConnectionType.Main],
+			inputs: ['main'],
+			outputs: ['main'],
 			credentials: [
 				{
 					name: 'ssembleApi',
